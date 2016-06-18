@@ -1,0 +1,30 @@
+<resources>
+    <string name="app_name">MemApplication</string>
+
+    <string name="action_share">Save and share</string>
+    <string name="action_ok">Ok</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_refresh">Refresh</string>
+    <string name="action_add_up_text">Add top text</string>
+    <string name="action_add_down_text">Add bottom text</string>
+    <string name="action_change">Change</string>
+    <string name="text_size">Text size</string>
+    <string name="text_color">Text color</string>
+    <string name="color">Color</string>
+    <string name="error_no_internet">Internet unavailable, check the connection and try again</string>
+    <string name="share_via">Share image using</string>
+
+    <string name="color_palette">Color Palette</string>
+
+    <string-array name="font_size">
+        <item>12</item>
+        <item>14</item>
+        <item>18</item>
+        <item>20</item>
+        <item>24</item>
+        <item>28</item>
+        <item>32</item>
+        <item>36</item>
+        <item>40</item>
+    </string-array>
+</resources>
