@@ -12,6 +12,7 @@ import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import javax.inject.Inject;
@@ -38,6 +39,8 @@ public class MainActivity extends AppCompatActivity {
     RecyclerView recyclerView;
     @Bind(R.id.btn_refresh)
     Button mButtonRefresh;
+    @Bind(R.id.pb_loading)
+    ProgressBar mPbarLoading;
 
     private MemeAdapter adapter;
 
@@ -65,6 +68,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void loadDataFromJSON() {
+        mPbarLoading.setVisibility(View.VISIBLE);
         if (NetworkUtils.checkNetworkConnection(this))
             requestJSON();
         else
@@ -81,6 +85,7 @@ public class MainActivity extends AppCompatActivity {
                     ResponseMeme jsonResponse = response.body();
                     adapter = new MemeAdapter(jsonResponse.data.memes, getApplicationContext());
                     recyclerView.setAdapter(adapter);
+                    mPbarLoading.setVisibility(View.GONE);
                 }
 
                 @Override
@@ -96,6 +101,7 @@ public class MainActivity extends AppCompatActivity {
     private void showErrorConnection() {
         Toast.makeText(this, R.string.error_no_internet, Toast.LENGTH_LONG).show();
         mButtonRefresh.setVisibility(View.VISIBLE);
+        mPbarLoading.setVisibility(View.GONE);
     }
 
     @OnClick(R.id.btn_refresh)

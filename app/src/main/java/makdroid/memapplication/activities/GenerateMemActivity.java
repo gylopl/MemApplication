@@ -10,6 +10,7 @@ import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.support.annotation.ColorInt;
@@ -19,20 +20,27 @@ import android.text.TextUtils;
 import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.afollestad.materialdialogs.color.ColorChooserDialog;
+import com.squareup.otto.Bus;
+import com.squareup.otto.Subscribe;
 import com.squareup.picasso.Picasso;
 import com.squareup.picasso.Target;
+
+import javax.inject.Inject;
 
 import butterknife.Bind;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 import makdroid.memapplication.FontPickerDialog;
+import makdroid.memapplication.MemApplication;
 import makdroid.memapplication.R;
+import makdroid.memapplication.otto.AsyncSaveBitmapTaskEvent;
 
 import static makdroid.memapplication.FontPickerDialog.SELECTED_FONT_SIZE;
 
@@ -49,12 +57,12 @@ public class GenerateMemActivity extends AppCompatActivity implements ColorChoos
     EditText mEditText;
     @Bind(R.id.imageViewMem)
     ImageView mImageMeme;
-    @Bind(R.id.btn_add_top_text)
-    Button mButtonTopText;
     @Bind(R.id.textViewColorPicker)
     TextView mTextColor;
     @Bind(R.id.text_view_font_size)
     TextView mTextFontSize;
+    @Bind(R.id.pb_loading)
+    ProgressBar mPbarLoading;
 
     private Bitmap mBitmapOriginal;
     private Bitmap mBitmapCanvas;
@@ -62,19 +70,27 @@ public class GenerateMemActivity extends AppCompatActivity implements ColorChoos
     private String bottomText;
     private int color = Color.BLUE;
     private int mSelectedFontSizeId = 0;
-
     private int[] mArrayFontSize;
+
+    @Inject
+    Bus bus;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_generate_mem);
         ButterKnife.bind(this);
+        initializeDependencyInjector();
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         getSupportActionBar().setDisplayShowHomeEnabled(true);
         restoreState(savedInstanceState);
         initTextViews();
         loadImageFromUrl();
+    }
+
+    private void initializeDependencyInjector() {
+        MemApplication memApplication = (MemApplication) getApplication();
+        memApplication.getAppComponent().inject(this);
     }
 
     private void restoreState(Bundle savedInstanceState) {
@@ -103,7 +119,6 @@ public class GenerateMemActivity extends AppCompatActivity implements ColorChoos
         public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
             mImageMeme.setImageBitmap(bitmap);
             mBitmapOriginal = bitmap;
-            mButtonTopText.setEnabled(true);
             drawText();//run when configuration change for redraw
         }
 
@@ -128,8 +143,15 @@ public class GenerateMemActivity extends AppCompatActivity implements ColorChoos
     }
 
     @Override
+    protected void onResume() {
+        super.onResume();
+        bus.register(this);
+    }
+
+    @Override
     public void onPause() {
         super.onPause();
+        bus.unregister(this);
 //        if (mBitmapCanvas != null && !mBitmapCanvas.isRecycled()) {
 //            mBitmapCanvas.recycle();
 //            mBitmapCanvas = null;
@@ -178,18 +200,12 @@ public class GenerateMemActivity extends AppCompatActivity implements ColorChoos
     }
 
     @OnClick(R.id.btn_share)
-    public void share() {
-        Uri bmpUri = saveBitmapInMedia();
-        final Intent shareIntent = new Intent(Intent.ACTION_SEND);
-        shareIntent.setType("image/*");
-        shareIntent.putExtra(android.content.Intent.EXTRA_TEXT, MEM);
-        shareIntent.putExtra(android.content.Intent.EXTRA_STREAM, bmpUri);
-
-        try {
-            startActivity(Intent.createChooser(shareIntent, getString(R.string.share_via)));
-        } catch (ActivityNotFoundException activityNotFound) {
-            Log.v("share", "share FAILED");
-        }
+    public void clickedShare() {
+        mPbarLoading.setVisibility(View.VISIBLE);
+        if (mBitmapCanvas != null)
+            new SaveBitmapTask().execute(mBitmapCanvas);
+        else
+            new SaveBitmapTask().execute(mBitmapOriginal);
     }
 
     @Override
@@ -246,20 +262,47 @@ public class GenerateMemActivity extends AppCompatActivity implements ColorChoos
         }
     }
 
-    public Uri saveBitmapInMedia() {
-        String path;
-        if (mBitmapCanvas != null)
-            path = MediaStore.Images.Media.insertImage(getContentResolver(), mBitmapCanvas, MEM, null);
-        else
-            path = MediaStore.Images.Media.insertImage(getContentResolver(), mBitmapOriginal, MEM, null);
-        return Uri.parse(path);
-    }
-
     @NonNull
     public static void start(Context context, String url) {
         Intent generateMemIntent = new Intent(context, GenerateMemActivity.class);
         generateMemIntent.putExtra(EXTRA_URL, url);
         context.startActivity(generateMemIntent);
+    }
+
+    private class SaveBitmapTask extends AsyncTask<Bitmap, Void, String> {
+        String path;
+
+        @Override
+        protected String doInBackground(Bitmap... params) {
+            path = MediaStore.Images.Media.insertImage(getContentResolver(), params[0], MEM, null);
+            return path;
+        }
+
+        @Override
+        protected void onPostExecute(String result) {
+            bus.post(new AsyncSaveBitmapTaskEvent(result));
+        }
+    }
+
+    @Subscribe
+    public void onAsyncTaskResult(AsyncSaveBitmapTaskEvent event) {
+        Toast.makeText(this, "Image saved", Toast.LENGTH_LONG).show();
+        share(event.getPath());
+    }
+
+    @NonNull
+    private void share(String path) {
+        Uri bmpUri = Uri.parse(path);
+        final Intent shareIntent = new Intent(Intent.ACTION_SEND);
+        shareIntent.setType("image/*");
+        shareIntent.putExtra(android.content.Intent.EXTRA_TEXT, MEM);
+        shareIntent.putExtra(android.content.Intent.EXTRA_STREAM, bmpUri);
+        mPbarLoading.setVisibility(View.GONE);
+        try {
+            startActivity(Intent.createChooser(shareIntent, getString(R.string.share_via)));
+        } catch (ActivityNotFoundException activityNotFound) {
+            Log.v("share", "share FAILED");
+        }
     }
 
 }

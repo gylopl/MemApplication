@@ -2,6 +2,8 @@ package makdroid.memapplication.dagger;
 
 import android.app.Application;
 
+import com.squareup.otto.Bus;
+
 import javax.inject.Singleton;
 
 import dagger.Module;
@@ -28,6 +30,12 @@ public class AppModule {
     @Singleton
     Application providesApplication() {
         return mApplication;
+    }
+
+    @Provides
+    @Singleton
+    public Bus provideBus() {
+        return new Bus();
     }
 
     @Provides

@@ -111,5 +111,9 @@
             android:text="@string/text_size"
             android:textAppearance="?android:attr/textAppearanceLarge" />
 
+        <ProgressBar
+            android:id="@+id/pb_loading"
+            style="@style/AppTheme.ProgressBar"
+            android:visibility="gone" />
     </RelativeLayout>
 </ScrollView>

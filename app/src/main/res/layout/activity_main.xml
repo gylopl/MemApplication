@@ -25,4 +25,9 @@
         android:layout_centerHorizontal="true"
         android:text="@string/action_refresh"
         android:visibility="gone" />
+
+    <ProgressBar
+        android:id="@+id/pb_loading"
+        style="@style/AppTheme.ProgressBar"
+        android:visibility="gone" />
 </RelativeLayout>

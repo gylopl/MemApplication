@@ -3,6 +3,7 @@ package makdroid.memapplication.dagger;
 import javax.inject.Singleton;
 
 import dagger.Component;
+import makdroid.memapplication.activities.GenerateMemActivity;
 import makdroid.memapplication.activities.MainActivity;
 
 /**
@@ -13,5 +14,7 @@ import makdroid.memapplication.activities.MainActivity;
 public interface AppComponent {
 
     void inject(MainActivity mainActivity);
+
+    void inject(GenerateMemActivity generateMemActivity);
 
 }
