@@ -246,7 +246,7 @@ public class GenerateMemActivity extends AppCompatActivity implements ColorChoos
             if (!TextUtils.isEmpty(topText)) {
                 paint.getTextBounds(topText, 0, topText.length(), bounds);
                 x = (mBitmapCanvas.getWidth() / 2 - bounds.width() / 2);
-                y = bounds.height() * 2;
+                y = bounds.height();
                 canvas.drawText(topText, x, y, paint);
             }
 
@@ -254,7 +254,7 @@ public class GenerateMemActivity extends AppCompatActivity implements ColorChoos
                 bounds = new Rect();
                 paint.getTextBounds(bottomText, 0, bottomText.length(), bounds);
                 x = (mBitmapCanvas.getWidth() / 2 - bounds.width() / 2);
-                y = mBitmapCanvas.getHeight() - bounds.height();
+                y = mBitmapCanvas.getHeight() - bounds.height() / 2;
                 canvas.drawText(bottomText, x, y, paint);
             }
             mImageMeme.setImageBitmap(mBitmapCanvas);
